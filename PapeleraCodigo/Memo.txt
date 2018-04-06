@@ -1,4 +1,4 @@
-Proyecto sistema de ventas
+﻿Proyecto sistema de ventas
 
 
 //-------6-10-2017--------
@@ -43,3 +43,6 @@ v1
 				Modulos de Pedidos
 
 		-modulo control de etiquetas(*)
+
+
+ultima modificacion
