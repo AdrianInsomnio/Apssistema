@@ -1,0 +1,77 @@
+private void Backup()
+{
+    string constring = "server=localhost;user=root;pwd=qwerty;database=test;";
+    string file = "C:\\backup.sql";
+    using (MySqlConnection conn = new MySqlConnection(constring))
+    {
+        using (MySqlCommand cmd = new MySqlCommand())
+        {
+            using (MySqlBackup mb = new MySqlBackup(cmd))
+            {
+                cmd.Connection = conn;
+                conn.Open();
+                mb.ExportToFile(file);
+                conn.Close();
+            }
+        }
+    }
+}
+////////////////////////////////////////////////////////////////////////////
+
+string constring = "server=localhost;user=root;pwd=qwerty;database=test;";
+string file = "C:\\backup.sql";
+using (MySqlConnection conn = new MySqlConnection(constring))
+{
+    using (MySqlCommand cmd = new MySqlCommand())
+    {
+        using (MySqlBackup mb = new MySqlBackup(cmd))
+        {
+            cmd.Connection = conn;
+            conn.Open();
+            mb.ImportFromFile(file);
+            conn.Close();
+        }
+    }
+}
+//////////////////////////////////////////////////////////////////////////////
+
+sqlite demo..................................................................
+
+consulta sencilla;
+
+       static string cadenaConexion = @"data source=C:\\Users\\Usuario\\Documents\\Visual Studio 2017\\Projects\\testsMetroForm\\testsMetroForm\\bin\\Debug\\db.db;Version=3; FailMissing=True;Foreign Keys=True;";
+ var inicio = new List<Proveedor>();
+
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection(cadenaConexion))
+                {
+                    conn.Open();
+                    error = "conecto";
+                    string consultasql = "select * from  proveedor";
+                    using (SQLiteCommand cmd = new SQLiteCommand(consultasql, conn))
+                    {
+                        using (SQLiteDataReader dr = cmd.ExecuteReader())
+                        {
+                            while(dr.Read())
+                            {
+                                Proveedor p = new Proveedor();
+                                p.IdProveedor = Int32.Parse( dr["codigoproveedor"].ToString());
+                                p.NombreProveedor = dr["nombreproveedor"].ToString();
+                                p.DescripcionProveedor = dr["descripcionproveedor"].ToString();
+                                inicio.Add(p);
+                            }
+                        }
+                    }
+                    conn.Close();
+
+                }
+            }
+            catch (SQLiteException e)
+            {
+                error = "no conecto";
+            }
+
+            return inicio;
+
+---------------------------------------------------------------------------------------
