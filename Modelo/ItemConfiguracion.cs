@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace CapaModelo.Modelo
 {
-   public class ItemConfiguracion :INotifyPropertyChanged       
+    public class ItemConfiguracion : Repositorio.BindableBase
     {
 
 
@@ -21,28 +21,22 @@ namespace CapaModelo.Modelo
             get { return m_Id; }
             set
             {
-                if (value != this.m_Id)
-                {
-                    this.m_Id = value;
-                    NotifyPropertyChanged();
-                }
+                SetProperty(ref this.m_Id, value);
             }
         }
 
 
+
         private string m_Nombre;
-                
+
         public string Nombre
         {
             get { return m_Nombre; }
             set
             {
-                if (value != this.m_Nombre)
-                {
-                    this.m_Nombre = value;
-                    NotifyPropertyChanged();
-                }
+                SetProperty(ref this.m_Nombre, value);
             }
+
         }
 
 
@@ -54,29 +48,23 @@ namespace CapaModelo.Modelo
             get { return m_Valor; }
             set
             {
-                if (value != this.m_Valor)
-                {
-                    this.m_Valor = value;
-                    NotifyPropertyChanged();
-                }
+                SetProperty(ref this.m_Valor, value);
             }
         }
 
 
 
-        private string  m_Configuracion;
+        private string m_Configuracion;
 
-        public string  Configuracion
+        public string Configuracion
         {
             get { return m_Configuracion; }
             set
-            {if (m_Configuracion != value)
-                {
-                    m_Configuracion = value;
-                    NotifyPropertyChanged();
-                }
+            {
+                SetProperty(ref m_Configuracion, value);
+            }
         }
-        }
+
 
 
 
@@ -85,25 +73,25 @@ namespace CapaModelo.Modelo
 
 
         #region Constructores
-
+        public ItemConfiguracion(int codigo, string nombre, string valor, string configuracion)
+        {
+            CodigoItemConfiguracion = codigo;Nombre = nombre;Valor = valor;Configuracion = configuracion;
+        }
         #endregion
+
+        public override string ToString()
+        {
+            return string.Format("Codigo {0} -Nombre {1} -Valor {2}",CodigoItemConfiguracion,Nombre,Valor);
+        }
 
         #region Interfaz
 
 
-        public event PropertyChangedEventHandler PropertyChanged;
 
-        // This method is called by the Set accessor of each property.
-        // The CallerMemberName attribute that is applied to the optional propertyName
-        // parameter causes the property name of the caller to be substituted as an argument.
-        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
-        {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-            }
-        }
+
         #endregion
 
-    }
+
+
+    }   
 }
