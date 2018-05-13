@@ -1,0 +1,227 @@
+
+<EmployeeInfo>
+  <Employee>
+    <EmpNo>101</EmpNo>
+    <EmpName>A</EmpName>
+    <Salary>12000</Salary>
+  </Employee>
+  <Employee>
+    <EmpNo>102</EmpNo>
+    <EmpName>B</EmpName>
+    <Salary>13000</Salary>
+  </Employee>
+</EmployeeInfo>
+
+This is just some sample data. Free feel to add several records in this file. I have added about 50 records in Company.xml.
+
+Step 2: Open the MainWindow.xaml and add the following XAML to it:
+
+<Window x:Class="WPF45_TaskbasedProgress.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="MainWindow" Height="741.323" Width="852.381">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="45*"/>
+            <RowDefinition Height="210*"/>
+            <RowDefinition Height="47*"/>
+            <RowDefinition Height="54*"/>
+        </Grid.RowDefinitions>
+        <TextBlock TextWrapping="Wrap" Text="Employee Information Manager"
+                   TextAlignment="Center"
+                   FontFamily="Times New Roman" FontWeight="ExtraBold"
+                   FontSize="50" Margin="0,0,-0.4,0.6" Grid.ColumnSpan="2"/>
+        <DataGrid Grid.ColumnSpan="2" Margin="0,4.4,-0.4,58.6"
+             AutoGenerateColumns="False"  ColumnWidth="*"     Name="dgEmp" Grid.Row="1">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="EmpNo" Binding="{Binding EmpNo}"></DataGridTextColumn>
+                <DataGridTextColumn Header="EmpName" Binding="{Binding EmpName}"></DataGridTextColumn>
+                <DataGridTextColumn Header="Salary" Binding="{Binding Salary}"></DataGridTextColumn>
+                <DataGridTextColumn Header="Tax" Binding="{Binding Tax}"></DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Button Content="Load Employees" Grid.Row="2" FontSize="20"
+                 Name="btnLoadEmployee" Click="btnLoadEmployee_Click" Margin="0,0.4,212.4,0"/>
+        <Button Content="Calculate  Tax" Grid.Row="2"
+                    FontSize="20"  Name="btnCalculateTax" Click="btnCalculateTax_Click" Margin="288,0.4,358.6,0" Grid.ColumnSpan="2"/>
+        <ProgressBar Grid.Row="3" Grid.ColumnSpan="2" Name="progress" Margin="0,0,-0.4,0" />
+        <Button Content="Cancel" Grid.Row="2"
+            FontSize="20"  x:Name="btnCancel"
+                Click="btnCancel_Click" Margin="157.6,0.4,66.6,0" Grid.Column="1"/>
+        <TextBlock HorizontalAlignment="Left" Margin="0,380.4,0,0"
+                   Name="txtStatus"
+                   Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" Height="30" Width="836" Grid.ColumnSpan="2"/>
+ 
+    </Grid>
+</Window>
+
+
+
+The XAML has a DataGrid for displaying Employee Data. This contains buttons to Load Employee data, Calculate Tax and Cancelation of the operation.
+
+Step 4: In the code behind, declare the following objects:
+
+
+
+
+ObservableCollection<Employee> employees;
+CancellationTokenSource cancelToken;
+Progress<double> progressOperation;
+--------------------------------------------------------------------------------------
+public class Employee
+{
+    public int EmpNo { get; set; }
+    public string EmpName { get; set; }
+    public int Salary { get; set; }
+    public decimal Tax { get; set; }
+}
+Step 6: Add the following code in the code-behind:
+
+public MainWindow()
+{
+    InitializeComponent();
+ 
+    Employees = new ObservableCollection<Employee>();
+    btnCancel.IsEnabled = false;
+}
+ 
+// Displaying Employees in DataGrid 
+private async void btnLoadEmployee_Click(object sender, RoutedEventArgs e)
+{
+    cancelToken = new CancellationTokenSource();
+    btnLoadEmployee.IsEnabled = false;
+    btnCancel.IsEnabled = true;
+    txtstatus.Text = "Loading.....";
+    progressOperation = new Progress<double>(value => progress.Value = value);
+ 
+    try
+    {
+ 
+        var Emps = await LoadEmployeesAsync(cancelToken.Token, progressOperation);
+ 
+        foreach (var item in Emps)
+        {
+            dgEmp.Items.Add(item);
+        }
+ 
+        txtStatus.Text ="Operation Completed";
+    }
+    catch (OperationCanceledException ex)
+    {
+        txtStatus.Text ="Operation cancelled" + ex.Message;
+    }
+    catch (Exception ex)
+    {
+        txtStatus.Text = "Operation cancelled" + ex.Message;
+    }
+    finally
+    {
+        cancelToken.Dispose();
+        btnLoadEmployee.IsEnabled = true;
+        btnCancel.IsEnabled = false;
+    }
+ 
+     
+}
+ 
+ 
+// Async Method to Load Employees
+ 
+async Task<ObservableCollection<Employee>> LoadEmployeesAsync(CancellationToken ct, IProgress<double> progress)
+{
+    Employees.Clear();
+    var task = Task.Run(() => {
+        var xDoc = XDocument.Load("Company.xml");
+ 
+        var Res = (from emp in xDoc.Descendants("Employee")
+                  select new Employee()
+                  {
+                       EmpNo = Convert.ToInt32(emp.Descendants("EmpNo").First().Value),
+                       EmpName = emp.Descendants("EmpName").First().Value.ToString(),
+                       Salary = Convert.ToInt32(emp.Descendants("Salary").First().Value)
+                  }).ToList();
+        
+ 
+       int recCount = 0;
+ 
+       foreach (var item in Res)
+        {
+            Thread.Sleep(100);
+            ct.ThrowIfCancellationRequested();
+            Employees.Add(item);
+            ++recCount;
+            progress.Report(recCount * 100.0 / 50);
+        }
+         
+        return Employees;
+     
+    });
+ 
+    return await task;
+}
+ 
+private async void btnCalculateTax_Click(object sender, RoutedEventArgs e)
+{
+    cancelToken = new CancellationTokenSource();
+    btnLoadEmployee.IsEnabled = false;
+    btnCalculateTax.IsEnabled = false;
+    btnCancel.IsEnabled = true;
+    txtStatus.Text = "Calculating.....";
+    progressOperation = new Progress<double>(value => progress.Value = value);
+    try
+    {
+        dgEmp.Items.Clear();
+        int recCount = 0;
+ 
+        foreach (Employee Emp in Employees)
+        {
+            dgEmp.Items.Add(await CalculateTaxPerRecord(Emp, cancelToken.Token, progressOperation));
+            ++recCount;
+            ((IProgress<double>)progressOperation).Report(recCount * 100.0 / 50);
+        }
+ 
+        txtStatus.Text = "Operation Completed";
+    }
+    catch (OperationCanceledException ex)
+    {
+        txtStatus.Text = "Operation cancelled" + ex.Message;
+    }
+    catch (Exception ex)
+    {
+        txtStatus.Text = "Operation cancelled" + ex.Message;
+    }
+    finally
+    {
+        cancelToken.Dispose();
+        btnCalculateTax.IsEnabled = true;
+        btnCancel.IsEnabled = false;
+    }
+}
+ 
+ 
+ 
+// Calcluate the Tax for every Employee Record.
+async Task<Employee> CalculateTaxPerRecord(Employee Emp, CancellationToken ct, IProgress<double> progress)
+{
+     var tsk = Task<Employee>.Run(() =>
+     {
+            Thread.Sleep(100);
+            ct.ThrowIfCancellationRequested();
+            Emp.Tax = Convert.ToInt32(Emp.Salary * 0.2);
+            return Emp;
+        });
+ 
+     
+    return await tsk;
+}
+ 
+ 
+ 
+private void btnCancel_Click(object sender, RoutedEventArgs e)
+{
+    cancelToken.Cancel();
+}

@@ -21,4 +21,185 @@ Interfaz Inotify
                 PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
             }
         }
+
+		 SetProperty(ref _firstName, value);
+
+
 --------------------------------------------------------------------------
+
+RelayCommand
+---------------------------------------------------------------------------
+public class RelayCommand : ICommand    
+{    
+    private Action<object> execute;    
+    private Func<object, bool> canExecute;    
+     
+    public event EventHandler CanExecuteChanged    
+    {    
+        add { CommandManager.RequerySuggested += value; }    
+        remove { CommandManager.RequerySuggested -= value; }    
+    }    
+     
+    public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)    
+    {    
+        this.execute = execute;    
+        this.canExecute = canExecute;    
+    }    
+     
+    public bool CanExecute(object parameter)    
+    {    
+        return this.canExecute == null || this.canExecute(parameter);    
+    }    
+     
+    public void Execute(object parameter)    
+    {    
+        this.execute(parameter);    
+    }    
+} 
+
+---------------------------------------------------------------------------
+var cmd1 = new RelayCommand(o => { /* do something 1 */ }, o => true);    
+var cmd2 = new RelayCommand(o => { /* do something 2 */ }, o => true);   
+---------------------------------------------------------------------------
+
+
+OVERRADE STRING
+
+public override string ToString()
+        {
+            return String.Format("Codigo {0} descrpcion {1} valor {2} ", 
+			CodigoItemPermiso,DescripcionItemPermiso,ValorPermiso);
+        }
+---------------------------------------------------------------------------------------------------------
+ //-------Conexion---------
+
+        private IDbConnection m_conexion;
+
+        private bool ConectarBD(string cadena)
+        {
+            bool exito = false;
+            m_conexion = new SqlConnection(cadena);
+            try
+            {
+                m_conexion.Open();
+                exito = true;
+            }
+            catch (Exception)
+            {
+                exito = false;
+            }
+            return exito;
+        }
+        private void DesconectarBD()
+        {
+            if (m_conexion.State ==ConnectionState.Open)
+            {
+                m_conexion.Close();
+            }
+        }
+
+        //-------End Conexion---------
+        private IDataReader EjecutarComando( IDbCommand cmd)
+        {
+            IDataReader datos = null;
+            if (m_conexion.State ==ConnectionState.Open)
+            {
+                datos = cmd.ExecuteReader();
+            }
+
+            return datos;
+        }
+        private ItemConfiguracion CrearDelReader(IDataReader datos)
+        {
+            int codigo = datos.GetInt32(0);
+            string nombre = datos.GetString(1);
+            string valor = datos.GetString(2);
+            string configuracion = datos.GetString(3);
+            return new ItemConfiguracion(codigo, nombre, valor, configuracion);
+        }
+        private IEnumerable<ItemConfiguracion> Find(string sqlComando)
+        {
+            ConectarBD(cadenaConexion);
+            IDbCommand buscarPorComando = new SqlCommand(sqlComando, (SqlConnection)m_conexion);
+            IDataReader datos = EjecutarComando(buscarPorComando);
+            ICollection<ItemConfiguracion> listado = new List<ItemConfiguracion>();
+            while (datos.Read())
+            {
+                listado.Add(CrearDelReader(datos));
+            }
+            DesconectarBD();
+            return listado;
+        }
+
+		-------------------------------------------------------------------
+		cargar un tab async
+		-------------------------------------------------------------------
+
+		private async Task addNewTabAsync()
+{
+  TabItem tab = new TabItem();
+  Grid g = new Grid();
+
+  var data = await Task.Run(() => getData(value));
+  Frame f = new Frame();
+  // Fill out frame with data.
+  f.Navigate(new MyPage());
+
+  g.Children.Add(f);
+  tab.Content = g;
+  MyTabControl.Items.Add(tab);
+  MyTabControl.SelectedItem = tab;
+}
+---------------------------------------------------------------------------------
+conectar a un Mysql y sqlCe
+---------------------------------------------------------------------------------
+
+ using (SqlCeConnection connection = new SqlCeConnection(@"Data Source=C:\data\test01.sdf;Password=dev1234;"))
+            {
+                connection.Open();
+                Console.WriteLine(connection);
+                Console.WriteLine("Conecto");
+                connection.Close();
+            }
+            using (MySqlConnection conn = new MySqlConnection())
+            {
+                conn.ConnectionString = @"Server=localhost;Database=appsisv1;UID=root;Password=dev1234";
+                conn.Open();
+                using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM appsisv1.persona;", conn))
+                { 
+
+                    MySqlDataReader dr = cmd.ExecuteReader();
+
+                while (dr.Read())
+                {
+                    Console.WriteLine("item {0} {1} " , dr.GetInt32(0) , dr.GetString(1));
+                }
+                }
+                conn.Close();
+            }
+
+			----------------------------------------------------------------------
+			llenar un observablecollection async
+			----------------------------------------------------------------------
+			public class MyClass : INotifyPropertyChanged
+{
+    private ObservableCollection<CProyecto> prope;
+
+    public ObservableCollection<CProyecto> Prope
+    {
+        get { return prope; }
+        set { prope = value; RaisePropertyChanged(nameof(Prope)); }
+    }
+
+    public MyClass()
+    {
+        // Don't wait or await.  When it's ready
+        // the UI will get notified.
+        LoadData();
+    }
+
+    async private Task LoadData() 
+    {
+        Prope = await clsStaticClassDataLoader.GetDataFromWebService();
+    }
+}
